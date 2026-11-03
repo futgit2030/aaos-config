@@ -1,0 +1,35 @@
+--- a/aaf/pcm_aaf.c	2026-09-21 12:07:37.541806636 +0200
++++ b/aaf/pcm_aaf.c	2026-09-21 12:07:37.553984086 +0200
+@@ -45,8 +45,30 @@
+ 
+ #define NSEC_PER_USEC 1000
+ #define NSEC_PER_SEC  1000000000
+-#define TAI_OFFSET    (37ULL * NSEC_PER_SEC)
+-#define TAI_TO_UTC(t) (t - TAI_OFFSET)
++/* Differenz CLOCK_TAI - CLOCK_REALTIME zur Laufzeit ermitteln, statt fest
++ * 37 s anzunehmen. Der feste Wert stimmt nur, wenn die Systemuhr UTC fuehrt
++ * UND der Kernel-TAI-Offset auf 37 gesetzt ist. Laeuft phc2sys mit -O 0
++ * (Systemuhr = PTP-Zeit, Kernel-TAI-Offset 0), landete der CLOCK_REALTIME-
++ * Timer sonst 37 s in der Vergangenheit -> tausende nachgeholte Expirations
++ * -> Underrun (-EPIPE) direkt nach dem Start.
++ */
++static int64_t aaf_tai_utc_offset(void)
++{
++	struct timespec tai, rt;
++	int64_t diff, sec = (int64_t) NSEC_PER_SEC;
++
++	if (clock_gettime(CLOCK_TAI, &tai) < 0 ||
++	    clock_gettime(CLOCK_REALTIME, &rt) < 0)
++		return 37 * sec;
++
++	diff = ((int64_t) tai.tv_sec - rt.tv_sec) * sec +
++	       ((int64_t) tai.tv_nsec - rt.tv_nsec);
++
++	/* Kernel-TAI-Offset ist ganzzahlig: auf volle Sekunden runden */
++	return ((diff + (diff >= 0 ? sec / 2 : -sec / 2)) / sec) * sec;
++}
++
++#define TAI_TO_UTC(t) ((t) - aaf_tai_utc_offset())
+ 
+ #define FD_COUNT_PLAYBACK 1
+ #define FD_COUNT_CAPTURE  2
