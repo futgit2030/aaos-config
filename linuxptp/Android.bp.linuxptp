@@ -1,6 +1,3 @@
-//
-// external/linuxptp/Android.bp
-//
 package {
     default_applicable_licenses: ["external_linuxptp_license"],
 }
@@ -16,9 +13,8 @@ cc_defaults {
     name: "linuxptp_defaults",
     vendor: true,
     cflags: [
-        // Zwingend: erzwingt linux/if_link.h VOR missing.h, sonst
-        // Redefinition der IFLA_BOND_*-Enums (Details s. 6.4).
-        // EIN String mit Leerzeichen - Soong kennt diese Sonderform.
+        // Pflicht: linux/if_link.h VOR missing.h, sonst IFLA_BOND_*-Redefinition.
+        // EIN String mit Leerzeichen - zwei Array-Eintraege lehnt Soong ab.
         "-include linux/if_link.h",
 
         "-D_GNU_SOURCE",
@@ -33,8 +29,8 @@ cc_defaults {
         "-Wno-sign-compare",
         "-Wno-format",
         "-Wno-pointer-arith",
-        // Zwingend: Soong baut mit -Werror, diese beiden Warnungen treten
-        // im unveränderten linuxptp-Code auf (Details s. u.)
+        // Pflicht: Soong baut mit -Werror.
+        // sk.c:224 / pmc_common.c+util.c / tlv.c HTONS-Makros
         "-Wno-gnu-variable-sized-type-not-at-end",
         "-Wno-address-of-packed-member",
         "-Wno-macro-redefined",
