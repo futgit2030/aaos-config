@@ -1,0 +1,5 @@
+sh_binary {
+    name: "tsn-setup.sh",     // = installierter Dateiname
+    src: "tsn-setup.sh",
+    vendor: true,             // -> /vendor/bin/tsn-setup.sh
+}
