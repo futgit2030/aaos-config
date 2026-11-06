@@ -1,0 +1,13 @@
+on property:sys.boot_completed=1
+    # insmod ist ein init-Builtin und laeuft mit allen Capabilities.
+    # Im Service fehlt CAP_SYS_MODULE -> "Failed to insmod: Operation not permitted".
+    insmod /vendor/lib/modules/8021q.ko
+    start avtp-setup
+
+service avtp-setup /vendor/bin/tsn-setup.sh
+    class late_start
+    user root
+    group root net_raw net_admin inet
+    capabilities NET_ADMIN NET_RAW
+    oneshot
+    disabled
