@@ -1,3 +1,13 @@
+# Grandmaster: PHC einmal auf TAI setzen (Systemzeit + 37 s), dann frei laufen lassen
+service phc-init /vendor/bin/phc_ctl /dev/ptp0 set adj 37
+    class late_start
+    user root
+    group root system
+    capabilities SYS_TIME
+    oneshot
+    disabled
+    seclabel u:r:gptp:s0
+
 service gptp /vendor/bin/ptp4l -f /vendor/etc/gptp.cfg -i eth0
     class late_start
     user root
@@ -6,7 +16,9 @@ service gptp /vendor/bin/ptp4l -f /vendor/etc/gptp.cfg -i eth0
     disabled
     seclabel u:r:gptp:s0
 
-service phc2sys /vendor/bin/phc2sys -s /dev/ptp0 -c CLOCK_REALTIME -O -37 \
+# -O 0: Systemuhr fuehrt gPTP-Zeit (TAI) - Pflicht, wenn ein AVTP-Talker auf diesem
+# Geraet laeuft (7, gemessen). Nur gPTP ohne AVTP: -O -37 (Systemuhr = UTC)
+service phc2sys /vendor/bin/phc2sys -s /dev/ptp0 -c CLOCK_REALTIME -O 0 \
         -z /dev/socket/ptp4l
     class late_start
     user root
@@ -16,6 +28,8 @@ service phc2sys /vendor/bin/phc2sys -s /dev/ptp0 -c CLOCK_REALTIME -O -37 \
     seclabel u:r:gptp:s0
 
 on property:vendor.gptp.enable=1
+    # nur Grandmaster (5); im Client-Betrieb streichen
+    exec_start phc-init
     start gptp
     start phc2sys
 
