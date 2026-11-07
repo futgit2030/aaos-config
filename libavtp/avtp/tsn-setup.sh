@@ -8,7 +8,7 @@ PATH=/system/bin:/vendor/bin
 export PATH
 
 IFACE=eth0
-VID=2
+VID=65
 
 # 8021q wird von init geladen (insmod-Builtin in der init.avtp.rc) - ein
 # Service mit "capabilities"-Zeile hat kein CAP_SYS_MODULE und bekaeme EPERM.
