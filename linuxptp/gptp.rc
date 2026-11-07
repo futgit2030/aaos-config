@@ -27,7 +27,7 @@ service phc2sys /vendor/bin/phc2sys -s /dev/ptp0 -c CLOCK_REALTIME -O 0 \
     disabled
     seclabel u:r:gptp:s0
 
-on property:vendor.gptp.enable=1
+on property:sys.boot_completed=1 && property:vendor.gptp.enable=1
     # nur Grandmaster (5); im Client-Betrieb streichen
     exec_start phc-init
     start gptp
