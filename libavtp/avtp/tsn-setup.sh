@@ -1,5 +1,5 @@
 #!/vendor/bin/sh
-# Ausgabe nach dmesg - als init-Service ist stdout/stderr sonst /dev/null (12)
+# Ausgabe nach dmesg - als init-Service ist stdout/stderr sonst /dev/null (14.3)
 exec 1>/dev/kmsg 2>&1
 
 # PFLICHT: die PATH eines init-Service enthaelt /system/bin nicht zuverlaessig,
@@ -23,5 +23,18 @@ else
     ip link set ${IFACE}.$VID up
 fi
 
-# Anzahl HW-TX-Queues: entscheidet ueber die Qdisc-Struktur (10)
+# Traffic Shaping (prio + CBS, gemessen): prio als Root, CBS nur am Band der SR-Klasse A.
+# SO_PRIORITY 3 -> Band 0 (1:1) -> CBS; alles andere -> Band 1 (1:2), ungedrosselt.
+# Geformt wird auf eth0, nicht eth0.2 - VLAN-Pakete laufen am Ende durch die Qdisc von eth0.
+# "replace" ist idempotent - ein zweiter Lauf aendert nichts.
+if tc qdisc replace dev $IFACE root handle 1: prio bands 2 \
+       priomap 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 && \
+   tc qdisc replace dev $IFACE parent 1:1 handle 10: cbs \
+       idleslope 5760 sendslope -994240 hicredit 9 locredit -89 offload 0; then
+    echo "tsn-setup: prio+cbs auf $IFACE aktiv"
+else
+    echo "tsn-setup: tc fehlgeschlagen - Shaping inaktiv"
+fi
+
+# Anzahl HW-TX-Queues: entscheidet ueber die Qdisc-Struktur (13.4)
 echo "tsn-setup: TX-Queues =" $(ls -d /sys/class/net/$IFACE/queues/tx-* | wc -l)
