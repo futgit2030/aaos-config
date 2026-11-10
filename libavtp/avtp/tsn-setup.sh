@@ -23,14 +23,17 @@ else
     ip link set ${IFACE}.$VID up
 fi
 
-# Traffic Shaping (prio + CBS, gemessen): prio als Root, CBS nur am Band der SR-Klasse A.
-# SO_PRIORITY 3 -> Band 0 (1:1) -> CBS; alles andere -> Band 1 (1:2), ungedrosselt.
-# Geformt wird auf eth0, nicht eth0.2 - VLAN-Pakete laufen am Ende durch die Qdisc von eth0.
+# Traffic Shaping: prio als Root (Software-Baender, unabhaengig von der einen HW-Queue),
+# CBS je SR-Klasse. SO_PRIORITY 3 -> Band 0 (1:1, Class A), 2 -> Band 1 (1:2, Class B),
+# Rest -> Band 2 (1:3), ungedrosselt.
+# Geformt wird auf eth0, nicht eth0.65 - VLAN-Pakete laufen am Ende durch die Qdisc von eth0.
 # "replace" ist idempotent - ein zweiter Lauf aendert nichts.
-if tc qdisc replace dev $IFACE root handle 1: prio bands 2 \
-       priomap 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 && \
+if tc qdisc replace dev $IFACE root handle 1: prio bands 3 \
+       priomap 2 2 1 0 2 2 2 2 2 2 2 2 2 2 2 2 && \
    tc qdisc replace dev $IFACE parent 1:1 handle 10: cbs \
-       idleslope 5760 sendslope -994240 hicredit 9 locredit -89 offload 0; then
+       idleslope 5760 sendslope -994240 hicredit 9 locredit -89 offload 0 && \
+   tc qdisc replace dev $IFACE parent 1:2 handle 20: cbs \
+       idleslope 3648 sendslope -996352 hicredit 12 locredit -113 offload 0; then
     echo "tsn-setup: prio+cbs auf $IFACE aktiv"
 else
     echo "tsn-setup: tc fehlgeschlagen - Shaping inaktiv"
