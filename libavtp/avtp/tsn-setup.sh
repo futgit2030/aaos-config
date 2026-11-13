@@ -33,7 +33,7 @@ if tc qdisc replace dev $IFACE root handle 1: prio bands 3 \
    tc qdisc replace dev $IFACE parent 1:1 handle 10: cbs \
        idleslope 5760 sendslope -994240 hicredit 9 locredit -89 offload 0 && \
    tc qdisc replace dev $IFACE parent 1:2 handle 20: cbs \
-       idleslope 3648 sendslope -996352 hicredit 12 locredit -113 offload 0; then
+       idleslope 15000 sendslope -985000 hicredit 24 locredit -396 offload 0; then
     echo "tsn-setup: prio+cbs auf $IFACE aktiv"
 else
     echo "tsn-setup: tc fehlgeschlagen - Shaping inaktiv"
